@@ -1,0 +1,16 @@
+{
+  "name": "NukeRC — Personal Start Page & Dashboard",
+  "short_name": "NukeRC",
+  "description": "A fast, personal start page with pinned links, live weather, football fixtures & results, and a daily checklist.",
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#863bff",
+  "background_color": "#210a0d",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
