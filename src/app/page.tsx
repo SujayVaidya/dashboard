@@ -1,13 +1,15 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
 import type { User } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/client'
-import { LEAGUES } from '@/lib/leagues'
 import { DEFAULT_SHORTCUTS } from '@/lib/defaultShortcuts'
+import logoImg from '@/assets/Modern_bold_logo_nukerc_202607162056.jpeg'
+import heroBgImg from '@/assets/New folder/Dark_tech_background_browser_das…_202607232204 (1).jpeg'
 import './Home.css'
 
 const DEFAULT_LOCATION = 'Pune, India'
+const MAN_UTD_TEAM_ID = '133612'
 const GUEST_SHORTCUTS: ShortcutItem[] = DEFAULT_SHORTCUTS.map((s) => ({ _id: `guest-${s.name}`, ...s }))
 
 interface ShortcutItem {
@@ -35,11 +37,6 @@ interface MatchEvent {
   dateEvent: string
   strTime: string
 }
-interface TeamItem {
-  idTeam: string
-  strTeam: string
-}
-
 function storeGet<T>(key: string): T | null {
   try {
     const raw = localStorage.getItem(key)
@@ -215,11 +212,7 @@ export default function Home() {
   const [cityInput, setCityInput] = useState('')
   const [prefs, setPrefs] = useState<Prefs>({})
 
-  const [leagueId, setLeagueId] = useState('4328')
-  const [teamId, setTeamId] = useState('')
-  const [teams, setTeams] = useState<TeamItem[]>([])
-  const [footballMode, setFootballMode] = useState<'next' | 'past'>('next')
-  const [matches, setMatches] = useState<MatchEvent[] | null>(null)
+  const [nextMatch, setNextMatch] = useState<MatchEvent | null>(null)
   const [matchError, setMatchError] = useState(false)
 
   const [checklistData, setChecklistData] = useState<ChecklistItem[]>([])
@@ -353,29 +346,19 @@ export default function Home() {
   }, [user])
 
   const fetchFixtures = useCallback(async () => {
-    setMatches(null)
+    setNextMatch(null)
     setMatchError(false)
     try {
-      const query = teamId ? `teamId=${teamId}` : `leagueId=${leagueId}`
-      const events = await apiFetch<MatchEvent[]>(`/api/fixtures?${query}&mode=${footballMode}`)
-      setMatches(events)
+      const events = await apiFetch<MatchEvent[]>(`/api/fixtures?teamId=${MAN_UTD_TEAM_ID}&mode=next`)
+      setNextMatch(events[0] || null)
     } catch {
       setMatchError(true)
     }
-  }, [footballMode, leagueId, teamId])
+  }, [])
 
   useEffect(() => {
     fetchFixtures()
   }, [fetchFixtures])
-
-  // load teams for the selected league, reset team filter on league change
-  useEffect(() => {
-    setTeamId('')
-    setTeams([])
-    apiFetch<TeamItem[]>(`/api/teams?leagueId=${leagueId}`)
-      .then(setTeams)
-      .catch(() => setTeams([]))
-  }, [leagueId])
 
   // link tile tilt
   useEffect(() => {
@@ -699,21 +682,18 @@ export default function Home() {
         </div>
       )}
 
-      <div className="hero">
+      <div className="hero" style={{ '--hero-bg-url': `url("${heroBgImg.src}")` } as CSSProperties}>
+        <div className="bg-layer l-photo" />
         <div className="bg-layer l-gradient" />
         <div className="bg-layer l-grain" />
-        <div className="bg-layer l-halo" />
         <div className="bg-layer l-vignette" />
 
         <div className="hero-content">
           <div className="topbar">
             <div className="brand">
               <div className="brand-mark">
-                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5L12 2Z" fill="#210a0d" />
-                </svg>
+                <img src={logoImg.src} alt="NukeRC" />
               </div>
-              <h1 className="brand-name">NukeRC</h1>
             </div>
 
             <div className="readouts">
@@ -745,6 +725,23 @@ export default function Home() {
                     x
                   </button>
                 </div>
+              </div>
+
+              <div className="chip">
+                <span className="chip-icon">⚽</span>
+                {matchError ? (
+                  <span className="chip-muted">fixtures unavailable</span>
+                ) : nextMatch === null ? (
+                  <span className="chip-muted">loading…</span>
+                ) : (
+                  <>
+                    <span>
+                      {nextMatch.strHomeTeam} vs {nextMatch.strAwayTeam}
+                    </span>
+                    <span className="chip-sep">·</span>
+                    <span className="chip-muted">{fmtMatchDate(nextMatch.dateEvent, nextMatch.strTime)}</span>
+                  </>
+                )}
               </div>
             </div>
 
@@ -787,66 +784,6 @@ export default function Home() {
             </div>
 
             <div className="content-right">
-              <div className="panel">
-                <div className="panel-head">
-                  <div className="panel-title">
-                    Football <span className="sub">next 5 fixtures &amp; results</span>
-                  </div>
-                </div>
-                <div className="panel-body">
-                  <div className="football-controls">
-                    <select value={leagueId} onChange={(e) => setLeagueId(e.target.value)}>
-                      {LEAGUES.map((l) => (
-                        <option key={l.id} value={l.id}>
-                          {l.name}
-                        </option>
-                      ))}
-                    </select>
-                    <select value={teamId} onChange={(e) => setTeamId(e.target.value)} disabled={teams.length === 0}>
-                      <option value="">All teams</option>
-                      {teams.map((t) => (
-                        <option key={t.idTeam} value={t.idTeam}>
-                          {t.strTeam}
-                        </option>
-                      ))}
-                    </select>
-                    <div className="toggle-group">
-                      <button className={'toggle-btn' + (footballMode === 'next' ? ' active' : '')} onClick={() => setFootballMode('next')}>
-                        upcoming
-                      </button>
-                      <button className={'toggle-btn' + (footballMode === 'past' ? ' active' : '')} onClick={() => setFootballMode('past')}>
-                        results
-                      </button>
-                    </div>
-                  </div>
-                  <div className="matchlist">
-                    {matchError ? (
-                      <div className="error-note">could not load fixtures — check your connection.</div>
-                    ) : matches === null ? (
-                      <div className="empty-note">loading fixtures…</div>
-                    ) : matches.length === 0 ? (
-                      <div className="empty-note">no fixtures found right now.</div>
-                    ) : (
-                      matches.map((ev, i) => (
-                        <div className="match" key={i}>
-                          <div className="teams">
-                            <span>{ev.strHomeTeam}</span>
-                            <span>{ev.strAwayTeam}</span>
-                          </div>
-                          {footballMode === 'past' && ev.intHomeScore !== null && ev.intAwayScore !== null ? (
-                            <div className="score">
-                              {ev.intHomeScore} – {ev.intAwayScore}
-                            </div>
-                          ) : (
-                            <div className="meta">{fmtMatchDate(ev.dateEvent, ev.strTime)}</div>
-                          )}
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-              </div>
-
               <div className="panel">
                 <div className="panel-head">
                   <div className="panel-title">
