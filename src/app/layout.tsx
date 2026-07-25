@@ -22,11 +22,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="manifest" href="/favicon/manifest.webmanifest" crossOrigin="use-credentials" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="theme-color" content="#fff" />
-        <meta name="application-name" content="NukeRC Dashboard" />
+        <meta name="application-name" content="NukeRC" />
         <link rel="apple-touch-icon" sizes="180x180" href="/favicon/apple-touch-icon-180x180.png" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-        <meta name="apple-mobile-web-app-title" content="NukeRC Dashboard" />
+        <meta name="apple-mobile-web-app-title" content="NukeRC" />
       </head>
       <body>{children}</body>
     </html>
